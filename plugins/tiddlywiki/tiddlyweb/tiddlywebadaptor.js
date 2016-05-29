@@ -13,13 +13,21 @@ A sync adaptor module for synchronising with TiddlyWeb compatible servers
 "use strict";
 
 var CONFIG_HOST_TIDDLER = "$:/config/tiddlyweb/host",
-	DEFAULT_HOST_TIDDLER = "$protocol$//$host$/";
+	DEFAULT_HOST_TIDDLER = "$protocol$//$host$/",
+	PATH_SEP = '/' /*require('path').sep*/;
 
 function TiddlyWebAdaptor(options) {
 	this.wiki = options.wiki;
 	this.host = this.getHost();
 	this.recipe = undefined;
 	this.logger = new $tw.utils.Logger("TiddlyWebAdaptor");
+}
+
+TiddlyWebAdaptor.prototype.uriEncode = function(data) {
+	var text = encodeURIComponent(data);
+	// Be compatible with apache "AllowEncodedSlashes No" settings
+	text = text.replace(RegExp(encodeURIComponent(PATH_SEP), 'gi'), PATH_SEP);
+	return text;
 }
 
 TiddlyWebAdaptor.prototype.getHost = function() {
@@ -158,7 +166,7 @@ Save a tiddler and invoke the callback with (err,adaptorInfo,revision)
 TiddlyWebAdaptor.prototype.saveTiddler = function(tiddler,callback) {
 	var self = this;
 	$tw.utils.httpRequest({
-		url: this.host + "recipes/" + encodeURIComponent(this.recipe) + "/tiddlers/" + encodeURIComponent(tiddler.fields.title),
+		url: this.host + "recipes/" + this.uriEncode(this.recipe) + "/tiddlers/" + this.uriEncode(tiddler.fields.title),
 		type: "PUT",
 		headers: {
 			"Content-type": "application/json"
@@ -184,7 +192,7 @@ Load a tiddler and invoke the callback with (err,tiddlerFields)
 TiddlyWebAdaptor.prototype.loadTiddler = function(title,callback) {
 	var self = this;
 	$tw.utils.httpRequest({
-		url: this.host + "recipes/" + encodeURIComponent(this.recipe) + "/tiddlers/" + encodeURIComponent(title),
+		url: this.host + "recipes/" + this.uriEncode(this.recipe) + "/tiddlers/" + this.uriEncode(title),
 		callback: function(err,data,request) {
 			if(err) {
 				return callback(err);
@@ -209,7 +217,7 @@ TiddlyWebAdaptor.prototype.deleteTiddler = function(title,callback,options) {
 	}
 	// Issue HTTP request to delete the tiddler
 	$tw.utils.httpRequest({
-		url: this.host + "bags/" + encodeURIComponent(bag) + "/tiddlers/" + encodeURIComponent(title),
+		url: this.host + "bags/" + this.uriEncode(bag) + "/tiddlers/" + this.uriEncode(title),
 		type: "DELETE",
 		callback: function(err,data,request) {
 			if(err) {
