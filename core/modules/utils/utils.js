@@ -17,7 +17,18 @@ Display a warning, in colour if we're on a terminal
 */
 exports.warning = function(text) {
 	console.log($tw.node ? "\x1b[1;33m" + text + "\x1b[0m" : text);
-}
+};
+
+/*
+Repeats a string
+*/
+exports.repeat = function(str,count) {
+	var result = "";
+	for(var t=0;t<count;t++) {
+		result += str;
+	}
+	return result;
+};
 
 /*
 Trim whitespace from the start and end of a string
@@ -29,6 +40,39 @@ exports.trim = function(str) {
 	} else {
 		return str;
 	}
+};
+
+/*
+Find the line break preceding a given position in a string
+Returns position immediately after that line break, or the start of the string
+*/
+exports.findPrecedingLineBreak = function(text,pos) {
+	var result = text.lastIndexOf("\n",pos - 1);
+	if(result === -1) {
+		result = 0;
+	} else {
+		result++;
+		if(text.charAt(result) === "\r") {
+			result++;
+		}
+	}
+	return result;
+};
+
+/*
+Find the line break following a given position in a string
+*/
+exports.findFollowingLineBreak = function(text,pos) {
+	// Cut to just past the following line break, or to the end of the text
+	var result = text.indexOf("\n",pos);
+	if(result === -1) {
+		result = text.length;
+	} else {
+		if(text.charAt(result) === "\r") {
+			result++;
+		}
+	}
+	return result;
 };
 
 /*
@@ -383,17 +427,18 @@ exports.htmlEncode = function(s) {
 
 // Converts all HTML entities to their character equivalents
 exports.entityDecode = function(s) {
-	var e = s.substr(1,s.length-2); // Strip the & and the ;
+	var converter = String.fromCodePoint || String.fromCharCode,
+		e = s.substr(1,s.length-2); // Strip the & and the ;
 	if(e.charAt(0) === "#") {
 		if(e.charAt(1) === "x" || e.charAt(1) === "X") {
-			return String.fromCharCode(parseInt(e.substr(2),16));	
+			return converter(parseInt(e.substr(2),16));	
 		} else {
-			return String.fromCharCode(parseInt(e.substr(1),10));
+			return converter(parseInt(e.substr(1),10));
 		}
 	} else {
 		var c = $tw.config.htmlEntities[e];
 		if(c) {
-			return String.fromCharCode(c);
+			return converter(c);
 		} else {
 			return s; // Couldn't convert it as an entity, just return it raw
 		}
